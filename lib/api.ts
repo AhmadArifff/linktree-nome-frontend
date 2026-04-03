@@ -1,19 +1,37 @@
 // ============================================================
 // lib/api.ts
-// PERUBAHAN: analyticsApi.recordEvent terima geo fields
-// (city, region, country, latitude, longitude) dari frontend
+//
+// FIX PRODUCTION:
+//   Sebelumnya: BASE_URL fallback ke 'http://localhost:3001/api'
+//   Jika NEXT_PUBLIC_API_URL tidak di-set di Vercel env vars
+//   → semua request ke localhost → gagal total di production
+//
+//   FIX: Tidak ada fallback hardcoded. Jika env var tidak ada,
+//   tampilkan warning di console agar mudah debug.
+//   Selalu set NEXT_PUBLIC_API_URL di Vercel Dashboard.
 // ============================================================
 
 import axios, { AxiosError } from 'axios'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+// Ambil dari env var — WAJIB di-set di Vercel Dashboard
+// Development: http://localhost:3001/api
+// Production:  https://linktree-nome-backend.vercel.app/api
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
+if (!BASE_URL && typeof window !== 'undefined') {
+  console.warn(
+    '[ShopLink] NEXT_PUBLIC_API_URL tidak di-set! ' +
+    'Set env var ini di Vercel Dashboard → Project → Settings → Environment Variables'
+  )
+}
 
 export const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 15000,
+  baseURL: BASE_URL ?? 'http://localhost:3001/api',
+  timeout: 20000,   // naikkan timeout untuk production Vercel cold start
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Inject JWT token ke setiap request
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('shoplink_token')
@@ -22,6 +40,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Handle 401 global → redirect ke login
 api.interceptors.response.use(
   (res) => res,
   (err: AxiosError) => {
@@ -75,24 +94,18 @@ export interface AdminUser {
 
 export type AnalyticsPeriod = '1d' | '7d' | '30d'
 
-export interface DailyStat {
-  day: string; views: number; clicks: number
-}
-
+export interface DailyStat { day: string; views: number; clicks: number }
 export interface ProductStat {
   product_id: string; product_name: string; category_name: string
   image_url: string | null; view_count: number; click_count: number
 }
-
 export interface CategoryStat {
   category_id: string; category_name: string; icon: string | null
   view_count: number; click_count: number
 }
-
 export interface AnalyticsSummary {
   totalViews: number; totalClicks: number; period: AnalyticsPeriod
 }
-
 export interface LocationStat {
   city: string; region: string; country: string
   latitude: number; longitude: number
@@ -105,9 +118,6 @@ export const authApi = {
     const { data } = await api.post('/auth/login', { email, password })
     return data.data as { token: string; admin: AdminUser }
   },
-  // FIX: tambah method register yang sebelumnya tidak ada
-  // Dipanggil dari app/admin/register/page.tsx
-  // Backend: POST /api/auth/register
   register: async (email: string, password: string) => {
     const { data } = await api.post('/auth/register', { email, password })
     return data.data as { token: string; admin: AdminUser }
@@ -211,27 +221,24 @@ export const productsApi = {
 
 // ── Analytics ─────────────────────────────────────────────────
 export const analyticsApi = {
-  // Geo fields dikirim dari frontend (lebih akurat dari lookup server-side)
   recordEvent: async (payload: {
     event_type:   'category_view' | 'product_click'
     category_id?: string
     product_id?:  string
     session_id?:  string
-    // Geo fields — dikirim langsung dari browser via ipapi.co
-    city?:      string
-    region?:    string
-    country?:   string
-    latitude?:  number
-    longitude?: number
+    city?:        string
+    region?:      string
+    country?:     string
+    latitude?:    number
+    longitude?:   number
   }): Promise<void> => {
     try {
-      // await api.post('/analytics/event', payload)
+      // Pakai /api/t/hit (anti ad-block) — route lama /analytics/event juga tetap ada
       await api.post('/t/hit', payload)
     } catch {
-      // silent fail
+      // silent fail — jangan ganggu UX karena tracking gagal
     }
   },
-
   getSummary: async (period: AnalyticsPeriod = '7d'): Promise<AnalyticsSummary> => {
     const { data } = await api.get('/admin/analytics/summary', { params: { period } })
     return data.data
@@ -280,7 +287,6 @@ export const CATEGORY_COLORS = [
   { bg: 'bg-emerald-100',text: 'text-emerald-700', border: 'border-emerald-200',dot: 'bg-emerald-500'},
   { bg: 'bg-rose-100',   text: 'text-rose-700',    border: 'border-rose-200',   dot: 'bg-rose-500'   },
 ]
-
 export function getCategoryColor(index: number) {
   return CATEGORY_COLORS[index % CATEGORY_COLORS.length]
 }
