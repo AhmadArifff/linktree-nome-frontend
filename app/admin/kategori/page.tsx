@@ -53,7 +53,10 @@ function CategoryModal({
         await categoriesApi.update(initial.id, payload)
         toast.success('Kategori berhasil diperbarui')
       } else {
-        await categoriesApi.create(payload)
+        await categoriesApi.create({
+          name: values.name as string,  // cast eksplisit: zodResolver sudah validasi .min(1)
+          icon: selectedIcon,
+        })
         toast.success('Kategori berhasil dibuat')
       }
       onSaved()

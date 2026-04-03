@@ -105,6 +105,13 @@ export const authApi = {
     const { data } = await api.post('/auth/login', { email, password })
     return data.data as { token: string; admin: AdminUser }
   },
+  // FIX: tambah method register yang sebelumnya tidak ada
+  // Dipanggil dari app/admin/register/page.tsx
+  // Backend: POST /api/auth/register
+  register: async (email: string, password: string) => {
+    const { data } = await api.post('/auth/register', { email, password })
+    return data.data as { token: string; admin: AdminUser }
+  },
   logout: async () => {
     await api.post('/auth/logout')
     localStorage.removeItem('shoplink_token')
