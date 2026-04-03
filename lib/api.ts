@@ -26,7 +26,8 @@ if (!BASE_URL && typeof window !== 'undefined') {
 }
 
 export const api = axios.create({
-  baseURL: BASE_URL ?? 'http://localhost:3001/api',
+  // baseURL: BASE_URL ?? 'http://localhost:3001/api',
+  baseURL: BASE_URL ?? 'https://linktree-nome-backend.vercel.app/api',
   timeout: 20000,   // naikkan timeout untuk production Vercel cold start
   headers: { 'Content-Type': 'application/json' },
 })
