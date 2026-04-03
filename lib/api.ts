@@ -225,7 +225,8 @@ export const analyticsApi = {
     longitude?: number
   }): Promise<void> => {
     try {
-      await api.post('/analytics/event', payload)
+      // await api.post('/analytics/event', payload)
+      await api.post('/t/hit', payload)
     } catch {
       // silent fail
     }
