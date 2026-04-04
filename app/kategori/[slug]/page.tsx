@@ -334,7 +334,7 @@ export default function KategoriPage() {
       </div>
 
       <footer className="text-center py-8 text-xs text-gray-400">
-        © {new Date().getFullYear()} ShopLink · Semua hak dilindungi
+        © {new Date().getFullYear()} NOME WEST COURT PADEL · Semua hak dilindungi
       </footer>
     </main>
   )

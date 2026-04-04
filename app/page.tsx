@@ -70,7 +70,7 @@ export default function HomePage() {
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-gray-800 text-center leading-tight">
           {loading
             ? <span className="inline-block w-48 h-10 rounded-xl bg-gray-200 animate-pulse" />
-            : store?.name ?? 'ShopLink Store'
+            : store?.name ?? 'NOME WEST COURT PADEL'
           }
         </h1>
 
@@ -153,7 +153,7 @@ export default function HomePage() {
       </section>
 
       <footer className="text-center py-6 text-xs text-gray-400">
-        © {new Date().getFullYear()} {store?.name ?? 'ShopLink'} · Dibuat dengan ❤️
+        © {new Date().getFullYear()} {store?.name ?? 'NOME WEST COURT PADEL'} · Dibuat dengan ❤️
       </footer>
     </main>
   )
