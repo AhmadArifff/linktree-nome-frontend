@@ -26,8 +26,7 @@ if (!BASE_URL && typeof window !== 'undefined') {
 }
 
 export const api = axios.create({
-  // baseURL: BASE_URL ?? 'http://localhost:3001/api',
-  baseURL: BASE_URL ?? 'https://linktree-nome-backend.vercel.app/api',
+  baseURL: BASE_URL ?? 'http://localhost:3001/api',
   timeout: 20000,   // naikkan timeout untuk production Vercel cold start
   headers: { 'Content-Type': 'application/json' },
 })
@@ -240,24 +239,24 @@ export const analyticsApi = {
       // silent fail — jangan ganggu UX karena tracking gagal
     }
   },
-  getSummary: async (period: AnalyticsPeriod = '7d'): Promise<AnalyticsSummary> => {
-    const { data } = await api.get('/admin/analytics/summary', { params: { period } })
+  getSummary: async (params: { period?: AnalyticsPeriod; from?: string; to?: string } = {}): Promise<AnalyticsSummary> => {
+    const { data } = await api.get('/admin/analytics/summary', { params })
     return data.data
   },
-  getDaily: async (period: AnalyticsPeriod = '7d'): Promise<DailyStat[]> => {
-    const { data } = await api.get('/admin/analytics/daily', { params: { period } })
+  getDaily: async (params: { period?: AnalyticsPeriod; from?: string; to?: string } = {}): Promise<DailyStat[]> => {
+    const { data } = await api.get('/admin/analytics/daily', { params })
     return data.data
   },
-  getProductStats: async (period: AnalyticsPeriod = '7d'): Promise<ProductStat[]> => {
-    const { data } = await api.get('/admin/analytics/products', { params: { period } })
+  getProductStats: async (params: { period?: AnalyticsPeriod; from?: string; to?: string } = {}): Promise<ProductStat[]> => {
+    const { data } = await api.get('/admin/analytics/products', { params })
     return data.data
   },
-  getCategoryStats: async (period: AnalyticsPeriod = '7d'): Promise<CategoryStat[]> => {
-    const { data } = await api.get('/admin/analytics/categories', { params: { period } })
+  getCategoryStats: async (params: { period?: AnalyticsPeriod; from?: string; to?: string } = {}): Promise<CategoryStat[]> => {
+    const { data } = await api.get('/admin/analytics/categories', { params })
     return data.data
   },
-  getLocations: async (period: AnalyticsPeriod = '7d'): Promise<LocationStat[]> => {
-    const { data } = await api.get('/admin/analytics/locations', { params: { period } })
+  getLocations: async (params: { period?: AnalyticsPeriod; from?: string; to?: string } = {}): Promise<LocationStat[]> => {
+    const { data } = await api.get('/admin/analytics/locations', { params })
     return data.data
   },
 }

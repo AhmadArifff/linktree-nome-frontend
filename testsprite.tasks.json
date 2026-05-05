@@ -1,0 +1,105 @@
+{
+  "suite": "ShopLink Frontend Tests",
+  "description": "UI testing untuk ShopLink frontend - login flow dan dashboard",
+  "baseUrl": "http://localhost:3000",
+  "tasks": [
+    {
+      "id": "1-homepage-load",
+      "name": "Homepage Loads Successfully",
+      "type": "browser",
+      "url": "/",
+      "expectedPageTitle": "ShopLink",
+      "description": "Verifikasi halaman utama dapat diakses"
+    },
+    {
+      "id": "2-login-page-load",
+      "name": "Login Page Loads",
+      "type": "browser",
+      "url": "/admin/login",
+      "checkElements": [
+        "input[type='email']",
+        "input[type='password']",
+        "button[type='submit']"
+      ],
+      "description": "Verifikasi halaman login admin dapat diakses"
+    },
+    {
+      "id": "3-admin-login-flow",
+      "name": "Admin Login Flow",
+      "type": "browser",
+      "url": "/admin/login",
+      "steps": [
+        {
+          "action": "fill",
+          "selector": "input[type='email']",
+          "value": "admin.nome.com"
+        },
+        {
+          "action": "fill",
+          "selector": "input[type='password']",
+          "value": "nome123"
+        },
+        {
+          "action": "click",
+          "selector": "button[type='submit']"
+        },
+        {
+          "action": "waitForNavigation",
+          "timeout": 3000
+        }
+      ],
+      "expectedUrl": "/admin/dashboard",
+      "description": "Login sebagai admin dan verifikasi redirect ke dashboard"
+    },
+    {
+      "id": "4-dashboard-content",
+      "name": "Dashboard Content Visible",
+      "type": "browser",
+      "url": "/admin/dashboard",
+      "checkElements": [
+        "h1",
+        "nav"
+      ],
+      "description": "Verifikasi elemen dashboard utama tersedia"
+    },
+    {
+      "id": "5-categories-page",
+      "name": "Categories Page Load",
+      "type": "browser",
+      "url": "/admin/kategori",
+      "expectedUrlContains": "kategori",
+      "description": "Verifikasi halaman kategori dapat diakses"
+    },
+    {
+      "id": "6-products-page",
+      "name": "Products Page Load",
+      "type": "browser",
+      "url": "/admin/produk",
+      "expectedUrlContains": "produk",
+      "description": "Verifikasi halaman produk dapat diakses"
+    },
+    {
+      "id": "7-profile-page",
+      "name": "Profile Page Load",
+      "type": "browser",
+      "url": "/admin/profile",
+      "expectedUrlContains": "profile",
+      "description": "Verifikasi halaman profil toko dapat diakses"
+    },
+    {
+      "id": "8-unauthorized-dashboard",
+      "name": "Unauthorized Dashboard Access",
+      "type": "browser",
+      "url": "/admin/dashboard",
+      "expectedUrlContains": "/admin/login",
+      "description": "Verifikasi akses dashboard tanpa login redirect ke login"
+    },
+    {
+      "id": "9-category-public",
+      "name": "Public Category Page",
+      "type": "browser",
+      "url": "/",
+      "description": "Verifikasi halaman kategori publik dapat diakses"
+    }
+  ]
+}

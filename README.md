@@ -64,6 +64,24 @@ Buka: `http://localhost:3000`
 
 > Pastikan backend sudah berjalan di `http://localhost:3001` terlebih dahulu.
 
+### 4. Jalankan TestSprite untuk pengujian lokal
+
+1. Simpan API key TestSprite lokal di environment variable atau file konfigurasi VS Code:
+
+```bash
+TESTSPRITE_API_KEY=sk-user-your-local-test-key
+```
+
+2. Jalankan TestSprite dari folder `frontend`:
+
+```bash
+npm run test:sprite
+```
+
+3. Atau gunakan konfigurasi VS Code di `frontend/.vscode/mcp.json`.
+
+> Jalankan `npm run dev` di frontend dan `npm run dev` di backend secara bersamaan agar TestSprite dapat menguji kedua layanan lokal.
+
 ---
 
 ## Halaman & Fitur

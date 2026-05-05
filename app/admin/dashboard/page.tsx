@@ -26,6 +26,7 @@ import {
   ExternalLink, Menu, ShoppingBag,
   TrendingUp, FolderOpen, Eye, MousePointerClick,
   Trophy, ArrowUpRight, Flame, Star, MapPin,
+  CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X,
 } from 'lucide-react'
 import {
   storeApi, categoriesApi, productsApi, authApi,
@@ -73,40 +74,54 @@ const BAR_PALETTE = [
 
 // ── Date helpers ──────────────────────────────────────────────
 
-/**
- * Generate array slot tanggal/jam untuk chart berdasarkan period.
- * Setiap slot punya key string + label display.
- * Jika ada data dari API, di-merge; slot kosong = 0.
- */
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+const DAY_NAMES_SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+const DAY_NAMES_FULL = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']
+
+function getMonthRange(year: number, month: number) {
+  const now = new Date()
+  const from = new Date(year, month, 1)
+  const to = year === now.getFullYear() && month === now.getMonth()
+    ? new Date()
+    : new Date(year, month + 1, 0)
+  to.setHours(23, 59, 59, 999)
+  return { from, to }
+}
+
+function getEffectiveChartWindow(period: AnalyticsPeriod, range: { from: Date; to: Date }) {
+  const endDate = new Date(range.to)
+  const daysWindow = period === '1d' ? 1 : period === '7d' ? 7 : 30
+  const startDate = new Date(endDate)
+  startDate.setDate(endDate.getDate() - daysWindow + 1)
+  if (startDate < range.from) startDate.setTime(range.from.getTime())
+  startDate.setHours(0, 0, 0, 0)
+  return { from: startDate, to: endDate }
+}
+
 function buildChartSlots(
   period: AnalyticsPeriod,
-  apiData: DailyStat[]
+  apiData: DailyStat[],
+  range: { from: Date; to: Date }
 ): { key: string; label: string; views: number; clicks: number }[] {
-  const now = new Date()
-
-  // Map data API: key → { views, clicks }
+  const { from: startDate, to: endDate } = getEffectiveChartWindow(period, range)
   const dataMap = new Map<string, { views: number; clicks: number }>()
-  // apiData.forEach(d => {
-  //   // key dari API format 'YYYY-MM-DD' atau 'YYYY-MM-DDTHH:mm'
-  //   dataMap.set(d.day, { views: d.views, clicks: d.clicks })
-  // })
   apiData.forEach(d => {
-    const normalized = d.day.slice(0, 10) // ambil YYYY-MM-DD saja
+    const normalized = d.day.slice(0, 10)
     dataMap.set(normalized, {
       views: d.views,
       clicks: d.clicks,
     })
   })
 
-  // ── 1 Hari → 24 slot per jam ──────────────────────────────
   if (period === '1d') {
     const slots = []
+    const day = new Date(endDate)
+    day.setHours(0, 0, 0, 0)
     for (let h = 0; h < 24; h++) {
-      const d = new Date(now)
+      const d = new Date(day)
       d.setHours(h, 0, 0, 0)
-      const key = d.toISOString().slice(0, 13)   // 'YYYY-MM-DDTHH'
+      const key = d.toISOString().slice(0, 13)
       const label = `${String(h).padStart(2, '0')}:00`
-      // Coba match dengan berbagai format key dari API
       const found =
         dataMap.get(key) ??
         dataMap.get(key + ':00') ??
@@ -116,35 +131,33 @@ function buildChartSlots(
     return slots
   }
 
-  // ── 7 Hari & 30 Hari → slot per hari ─────────────────────
-  const days = period === '7d' ? 7 : 30
   const slots = []
-
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(now.getDate() - i)
-    d.setHours(0, 0, 0, 0)
-
-    // const key = d.toISOString().slice(0, 10)  // 'YYYY-MM-DD'
-    const key = d.toLocaleDateString('en-CA') // YYYY-MM-DD lokal
-
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const key = d.toLocaleDateString('en-CA')
     let label: string
     if (period === '7d') {
-      // Tampilkan: nama hari singkat + tanggal, misal "Sen 1", "Sel 2"
-      const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
-      label = `${dayNames[d.getDay()]} ${d.getDate()}`
+      label = `${DAY_NAMES_SHORT[d.getDay()]} ${d.getDate()}`
     } else {
-      // 30 hari: tampilkan "1 Jan", "15 Jan" — hanya tampil tiap 5 hari supaya tidak crowded
-      // (XAxis di recharts akan handle tick interval otomatis)
-      const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-      label = `${d.getDate()} ${monthNames[d.getMonth()]}`
+      label = `${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`
     }
-
     const found = dataMap.get(key)
     slots.push({ key, label, views: found?.views ?? 0, clicks: found?.clicks ?? 0 })
   }
 
   return slots
+}
+
+function formatTrafficRangeLabel(period: AnalyticsPeriod, range: { from: Date; to: Date }) {
+  const effectiveRange = getEffectiveChartWindow(period, range)
+  const from = effectiveRange.from
+  const to = effectiveRange.to
+  if (period === '1d') {
+    return `Per jam — ${to.getDate()} ${MONTH_LABELS[to.getMonth()]} ${to.getFullYear()}`
+  }
+  if (period === '7d') {
+    return `${DAY_NAMES_FULL[from.getDay()]} ${from.getDate()} ${MONTH_LABELS[from.getMonth()]} — ${DAY_NAMES_FULL[to.getDay()]} ${to.getDate()} ${MONTH_LABELS[to.getMonth()]} ${to.getFullYear()}`
+  }
+  return `${from.getDate()} ${MONTH_LABELS[from.getMonth()]} — ${to.getDate()} ${MONTH_LABELS[to.getMonth()]} ${to.getFullYear()}`
 }
 
 // ── Admin Layout ──────────────────────────────────────────────
@@ -267,6 +280,73 @@ function PeriodSelector({ value, onChange }: { value: AnalyticsPeriod; onChange:
           {opt.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+function MonthYearPicker({
+  month,
+  year,
+  onMonthChange,
+  onYearChange,
+}: {
+  month: number
+  year: number
+  onMonthChange: (month: number) => void
+  onYearChange: (year: number) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(prev => !prev)}
+        className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm hover:border-violet-300 transition-colors">
+        <div className="w-10 h-10 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center">
+          <CalendarDays className="w-5 h-5" />
+        </div>
+        <div className="text-left min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">Filter Bulan</p>
+          <p className="text-sm font-semibold text-gray-900 truncate">{MONTH_LABELS[month]} {year}</p>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-40 mt-3 w-72 rounded-3xl border border-gray-200 bg-white p-4 shadow-2xl">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-gray-400">Pilih Bulan & Tahun</p>
+              <p className="font-semibold text-gray-900">Sesuaikan filter dashboard</p>
+            </div>
+            <button type="button" onClick={() => setOpen(false)}
+              className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {MONTH_LABELS.map((label, index) => (
+              <button key={label} type="button" onClick={() => { onMonthChange(index); setOpen(false) }}
+                className={`rounded-2xl px-2 py-2 text-sm font-semibold transition ${
+                  index === month ? 'bg-violet-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-violet-50'
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">
+            <button type="button" onClick={() => onYearChange(year - 1)}
+              className="rounded-full p-2 text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span>{year}</span>
+            <button type="button" onClick={() => onYearChange(year + 1)}
+              className="rounded-full p-2 text-gray-500 hover:bg-white hover:text-gray-800 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -438,7 +518,10 @@ function DistribusiLegend({ products }: { products: { name: string; index: numbe
 
 // ── Dashboard Page ────────────────────────────────────────────
 export default function DashboardPage() {
+  const now = new Date()
   const [period, setPeriod]               = useState<AnalyticsPeriod>('7d')
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const [selectedYear, setSelectedYear]   = useState(now.getFullYear())
   const [store, setStore]                 = useState<StoreProfile | null>(null)
   const [stats, setStats]                 = useState({ categories: 0, products: 0 })
   const [summary, setSummary]             = useState({ totalViews: 0, totalClicks: 0 })
@@ -465,15 +548,22 @@ export default function DashboardPage() {
     loadBase()
   }, [])
 
-  const loadAnalytics = useCallback(async (p: AnalyticsPeriod) => {
+  const monthRange = getMonthRange(selectedYear, selectedMonth)
+
+  const loadAnalytics = useCallback(async (p: AnalyticsPeriod, range: { from: Date; to: Date }) => {
     setLoadingChart(true)
     try {
+      const params = {
+        period: p,
+        from: range.from.toISOString(),
+        to: range.to.toISOString(),
+      }
       const [sum, daily, prodStats, catStats, locs] = await Promise.all([
-        analyticsApi.getSummary(p),
-        analyticsApi.getDaily(p),
-        analyticsApi.getProductStats(p),
-        analyticsApi.getCategoryStats(p),
-        analyticsApi.getLocations(p),
+        analyticsApi.getSummary(params),
+        analyticsApi.getDaily(params),
+        analyticsApi.getProductStats(params),
+        analyticsApi.getCategoryStats(params),
+        analyticsApi.getLocations(params),
       ])
       setSummary({ totalViews: sum.totalViews, totalClicks: sum.totalClicks })
       setDailyData(daily)
@@ -484,7 +574,7 @@ export default function DashboardPage() {
     finally { setLoadingChart(false) }
   }, [])
 
-  useEffect(() => { loadAnalytics(period) }, [period, loadAnalytics])
+  useEffect(() => { loadAnalytics(period, monthRange) }, [period, selectedMonth, selectedYear, loadAnalytics])
 
   // Computed
   const topGainers       = productStats.slice(0, 5)
@@ -494,7 +584,7 @@ export default function DashboardPage() {
   const periodLabel      = period === '1d' ? '1 hari' : period === '7d' ? '7 hari' : '30 hari'
 
   // ── Chart data: fill semua slot (tanggal/jam) ─────────────
-  const chartSlots = buildChartSlots(period, dailyData)
+  const chartSlots = buildChartSlots(period, dailyData, monthRange)
 
   // Interval XAxis: 1d=setiap 3 jam, 7d=semua, 30d=setiap 5 hari
   const xAxisInterval = period === '1d' ? 2 : period === '7d' ? 0 : 4
@@ -535,6 +625,22 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Bulan/Tahun Filter */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="font-extrabold text-gray-800">Filter Bulan Dashboard</h3>
+            <p className="text-sm text-gray-500 mt-1">Semua grafik dan ringkasan akan disesuaikan dengan bulan dan tahun terpilih.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <MonthYearPicker
+              month={selectedMonth}
+              year={selectedYear}
+              onMonthChange={setSelectedMonth}
+              onYearChange={setSelectedYear}
+            />
+          </div>
+        </div>
+
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard label="Total Kategori"   value={loadingBase  ? '...' : stats.categories}
@@ -552,21 +658,8 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
               <h3 className="font-extrabold text-gray-800">Traffic Overview</h3>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {period === '1d' && 'Per jam — hari ini'}
-                {period === '7d' && (() => {
-                  const now = new Date()
-                  const from = new Date(now); from.setDate(now.getDate() - 6)
-                  const dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']
-                  const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-                  return `${dayNames[from.getDay()]} ${from.getDate()} ${monthNames[from.getMonth()]} — ${dayNames[now.getDay()]} ${now.getDate()} ${monthNames[now.getMonth()]}`
-                })()}
-                {period === '30d' && (() => {
-                  const now = new Date()
-                  const from = new Date(now); from.setDate(now.getDate() - 29)
-                  const monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
-                  return `${from.getDate()} ${monthNames[from.getMonth()]} — ${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`
-                })()}
+              <p className="text-xs text-gray-400 mt-0.5 break-words max-w-full leading-snug">
+                {formatTrafficRangeLabel(period, monthRange)}
               </p>
             </div>
             <PeriodSelector value={period} onChange={setPeriod} />

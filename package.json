@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:sprite": "npx @testsprite/testsprite-mcp@latest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.6.0",
