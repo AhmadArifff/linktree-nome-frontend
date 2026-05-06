@@ -34,6 +34,7 @@ import {
   StoreProfile, AnalyticsPeriod, DailyStat,
   ProductStat, CategoryStat, LocationStat,
 } from '@/lib/api'
+import { JakartaClock } from '@/components/JakartaClock'
 
 const IndonesiaMap = dynamic(() => import('@/components/IndonesiaMap'), {
   ssr: false,
@@ -193,6 +194,9 @@ export function AdminLayout({ children, title }: { children: ReactNode; title?: 
             <p className="text-xs text-violet-500 font-semibold">Admin Panel</p>
           </div>
         </div>
+      </div>
+      <div className="p-4">
+        <JakartaClock />
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
