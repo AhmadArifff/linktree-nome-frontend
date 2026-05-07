@@ -4,15 +4,15 @@
 // app/kategori/[slug]/page.tsx
 // Halaman produk per kategori + modal detail
 //
-// FIX ANALYTICS — dua event yang sekarang di-track:
+// FIX ANALYTICS â€” dua event yang sekarang di-track:
 //
-//   1. category_view — dipanggil saat halaman selesai load data
+//   1. category_view â€” dipanggil saat halaman selesai load data
 //      (useEffect setelah category data berhasil di-fetch)
 //      Mencatat bahwa user membuka halaman kategori ini
 //
-//   2. product_click — dipanggil saat user KLIK produk:
-//      a) klik card produk (gambar/area card) → redirect marketplace
-//      b) klik tombol "Beli Sekarang" di modal → redirect marketplace
+//   2. product_click â€” dipanggil saat user KLIK produk:
+//      a) klik card produk (gambar/area card) â†’ redirect marketplace
+//      b) klik tombol "Beli Sekarang" di modal â†’ redirect marketplace
 //      Keduanya melewati handleProductClick() yang track dulu, lalu buka link
 // ============================================================
 
@@ -24,11 +24,17 @@ import { ArrowLeft, X, ExternalLink, ShoppingBag, Search, ChevronRight } from 'l
 import { categoriesApi, getCategoryColor, Category, Product } from '@/lib/api'
 import { trackCategoryView, trackProductClick } from '@/lib/analytics'
 
-// ── Modal Detail Produk ──────────────────────────────────────
+function formatPriceDisplay(rawPrice: string): string {
+  const digitsOnly = rawPrice.replace(/\D/g, '')
+  if (!digitsOnly) return rawPrice
+  return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// â”€â”€ Modal Detail Produk â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductModal({
   product,
   onClose,
-  onBuy,           // callback saat user klik beli → tracking dihandle parent
+  onBuy,           // callback saat user klik beli â†’ tracking dihandle parent
 }: {
   product: Product
   onClose: () => void
@@ -75,7 +81,7 @@ function ProductModal({
             <h2 className="text-xl font-extrabold text-gray-800 leading-snug">{product.name}</h2>
             {product.price && (
               <p className="text-2xl font-extrabold text-violet-600">
-                Rp {product.price.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                Rp {formatPriceDisplay(product.price)}
               </p>
             )}
             {product.description && (
@@ -83,7 +89,7 @@ function ProductModal({
             )}
           </div>
 
-          {/* CTA — FIX: onBuy dipanggil agar tracking product_click terjadi */}
+          {/* CTA â€” FIX: onBuy dipanggil agar tracking product_click terjadi */}
           <button
             onClick={() => onBuy(product)}
             className="mt-6 flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl
@@ -100,7 +106,7 @@ function ProductModal({
   )
 }
 
-// ── Card Produk ──────────────────────────────────────────────
+// â”€â”€ Card Produk â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ProductCard({
   product,
   onDetail,
@@ -114,7 +120,7 @@ function ProductCard({
 }) {
   return (
     <div className="group card overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-200 animate-slide-up">
-      {/* Gambar — FIX: onClick pakai onBuy (track + buka marketplace) */}
+      {/* Gambar â€” FIX: onClick pakai onBuy (track + buka marketplace) */}
       <div
         onClick={() => onBuy(product)}
         className="block aspect-[4/3] bg-gray-100 overflow-hidden cursor-pointer"
@@ -138,7 +144,7 @@ function ProductCard({
         <h3 className="font-bold text-gray-800 text-sm leading-snug line-clamp-2">{product.name}</h3>
         {product.price && (
           <p className="text-base font-extrabold text-violet-600">
-            Rp {product.price.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            Rp {formatPriceDisplay(product.price)}
           </p>
         )}
         {product.short_description && (
@@ -146,7 +152,7 @@ function ProductCard({
         )}
 
         <div className="flex gap-2 pt-1">
-          {/* Tombol Lihat Detail → modal (tidak track, hanya buka modal) */}
+          {/* Tombol Lihat Detail â†’ modal (tidak track, hanya buka modal) */}
           <button
             onClick={onDetail}
             className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 ${colorClass.border} ${colorClass.text} ${colorClass.bg} hover:opacity-80 transition-opacity`}
@@ -154,7 +160,7 @@ function ProductCard({
             Lihat Detail
           </button>
 
-          {/* Tombol beli → FIX: pakai onBuy agar tracking product_click jalan */}
+          {/* Tombol beli â†’ FIX: pakai onBuy agar tracking product_click jalan */}
           <button
             onClick={() => onBuy(product)}
             className="flex items-center justify-center w-9 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition-colors"
@@ -181,7 +187,7 @@ function ProductCardSkeleton() {
   )
 }
 
-// ── Halaman Utama ─────────────────────────────────────────────
+// â”€â”€ Halaman Utama â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function KategoriPage() {
   const params  = useParams()
   const router  = useRouter()
@@ -206,7 +212,7 @@ export default function KategoriPage() {
         const data = await categoriesApi.getBySlug(slug)
         setCategory(data)
 
-        // ── FIX: track category_view setelah data berhasil dimuat ──
+        // â”€â”€ FIX: track category_view setelah data berhasil dimuat â”€â”€
         // Pakai ref agar tidak double-fire meski useEffect re-run (StrictMode)
         if (!viewTracked.current) {
           viewTracked.current = true
@@ -224,7 +230,7 @@ export default function KategoriPage() {
     load()
   }, [slug])
 
-  // ── FIX: handleProductClick — track + buka marketplace ──────
+  // â”€â”€ FIX: handleProductClick â€” track + buka marketplace â”€â”€â”€â”€â”€â”€
   // Dipanggil dari: klik card, klik ikon external link, klik "Beli Sekarang" di modal
   const handleProductClick = useCallback((product: Product) => {
     // Track dulu (fire-and-forget)
@@ -244,7 +250,7 @@ export default function KategoriPage() {
   if (!loading && error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
-        <p className="text-5xl">😕</p>
+        <p className="text-5xl">ðŸ˜•</p>
         <p className="text-gray-600 font-semibold text-center">{error}</p>
         <button onClick={() => router.push('/')} className="btn-primary">Kembali ke Beranda</button>
       </div>
@@ -312,7 +318,7 @@ export default function KategoriPage() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4">{search ? '🔍' : '📦'}</p>
+            <p className="text-5xl mb-4">{search ? 'ðŸ”' : 'ðŸ“¦'}</p>
             <p className="text-gray-500 font-semibold">
               {search ? `Produk "${search}" tidak ditemukan` : 'Belum ada produk di kategori ini'}
             </p>
@@ -326,7 +332,7 @@ export default function KategoriPage() {
                 product={product}
                 colorClass={color}
                 onDetail={() => setSelectedProduct(product)}
-                onBuy={handleProductClick}   // ← FIX: teruskan handleProductClick
+                onBuy={handleProductClick}   // â† FIX: teruskan handleProductClick
               />
             ))}
           </div>
@@ -334,8 +340,9 @@ export default function KategoriPage() {
       </div>
 
       <footer className="text-center py-8 text-xs text-gray-400">
-        © {new Date().getFullYear()} NOME WEST COURT PADEL · Semua hak dilindungi
+        Â© {new Date().getFullYear()} NOME WEST COURT PADEL Â· Semua hak dilindungi
       </footer>
     </main>
   )
 }
+
